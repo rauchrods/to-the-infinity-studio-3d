@@ -66,6 +66,9 @@ export class GalleryScene {
 
     // 7. Build Artwork Frames with Gilded Gold frames & visible photos
     this.buildArtworks(layout);
+
+    // 8. Build Grand Studio Logo Displays on Entrance (Front) and Far End (Back) Walls
+    this.buildLogoArtworks(hallLength, hallHeight);
   }
 
   private buildArchitecture(length: number, width: number, height: number) {
@@ -399,6 +402,233 @@ export class GalleryScene {
       group.add(hood);
 
       // Add frame group to main scene
+      this.scene.add(group);
+    });
+  }
+
+  /**
+   * Builds grand exhibition statement centerpieces of the Studio's official logo on the Front (Entrance) and Back (Far End) walls
+   */
+  private buildLogoArtworks(hallLength: number, hallHeight: number) {
+    const textureLoader = new THREE.TextureLoader();
+    const goldFrameMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      roughness: 0.28,
+      metalness: 0.88,
+    });
+    const matBoardMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const lampMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      roughness: 0.25,
+      metalness: 0.9,
+    });
+
+    const logoTexture = textureLoader.load('/images/about-1.png', (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.generateMipmaps = true;
+    });
+
+    const logoItem = {
+      id: 'studio-logo',
+      title: 'To The Infinity Studio — Emblem',
+      category: 'commercial',
+      categoryLabel: 'Identity & Brand Vision',
+      client: 'To The Infinity Studio',
+      imageSrc: '/images/about-1.png',
+      description: 'The signature emblem of To The Infinity Studio, founded by Sarvesh Chaudhari. Commercial & Editorial Photography defined by minimalism, precision lighting, and authentic artistic expression.',
+    };
+
+    // Front wall (entrance wall behind spawn, facing into the gallery along +Z)
+    // Back wall (far end of the long gallery, facing towards entrance along -Z)
+    const wallTargets = [
+      {
+        x: 0,
+        y: hallHeight / 2 - 0.1,
+        z: -1.86,
+        rotationY: 0, // Faces forward (+Z)
+        wall: 'front' as const,
+      },
+      {
+        x: 0,
+        y: hallHeight / 2 - 0.1,
+        z: hallLength - 2.14,
+        rotationY: Math.PI, // Faces backward (-Z)
+        wall: 'end' as const,
+      },
+    ];
+
+    const logoWidth = 2.4;
+    const logoHeight = 2.4;
+    const frameThickness = 0.18;
+    const frameDepth = 0.08;
+
+    wallTargets.forEach((target, index) => {
+      const group = new THREE.Group();
+      group.position.set(target.x, target.y, target.z);
+      group.rotation.y = target.rotationY;
+
+      // 1. Classical Thick Gold Frame Molding Bars
+      const outerWidth = logoWidth + frameThickness * 2;
+      const outerHeight = logoHeight + frameThickness * 2;
+
+      // Top bar
+      const topBar = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, frameThickness, frameDepth),
+        goldFrameMat
+      );
+      topBar.position.set(0, logoHeight / 2 + frameThickness / 2, frameDepth / 2);
+      group.add(topBar);
+
+      // Bottom bar
+      const bottomBar = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, frameThickness, frameDepth),
+        goldFrameMat
+      );
+      bottomBar.position.set(0, -logoHeight / 2 - frameThickness / 2, frameDepth / 2);
+      group.add(bottomBar);
+
+      // Left bar
+      const leftBar = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, logoHeight, frameDepth),
+        goldFrameMat
+      );
+      leftBar.position.set(-logoWidth / 2 - frameThickness / 2, 0, frameDepth / 2);
+      group.add(leftBar);
+
+      // Right bar
+      const rightBar = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, logoHeight, frameDepth),
+        goldFrameMat
+      );
+      rightBar.position.set(logoWidth / 2 + frameThickness / 2, 0, frameDepth / 2);
+      group.add(rightBar);
+
+      // Backing board
+      const backingMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(outerWidth, outerHeight),
+        new THREE.MeshBasicMaterial({ color: 0x1a1a1c })
+      );
+      backingMesh.position.z = 0.001;
+      group.add(backingMesh);
+
+      // 2. White Passe-Partout
+      const matBoardMargin = 0.1;
+      const matGeo = new THREE.PlaneGeometry(logoWidth, logoHeight);
+      const matBoard = new THREE.Mesh(matGeo, matBoardMat);
+      matBoard.position.z = 0.005;
+      group.add(matBoard);
+
+      // 3. Logo Canvas Mesh
+      const photoWidth = logoWidth - matBoardMargin * 2;
+      const photoHeight = logoHeight - matBoardMargin * 2;
+      const photoGeo = new THREE.PlaneGeometry(photoWidth, photoHeight);
+      const photoMat = new THREE.MeshBasicMaterial({
+        map: logoTexture,
+        side: THREE.FrontSide,
+      });
+
+      const photoMesh = new THREE.Mesh(photoGeo, photoMat);
+      photoMesh.position.z = 0.012;
+      photoMesh.name = `logo-artwork-${index}`;
+      group.add(photoMesh);
+
+      // Register for inspection click
+      const artworkPos: WallArtworkPosition = {
+        item: logoItem,
+        wall: target.wall === 'front' ? 'left' : 'end',
+        x: target.x,
+        y: target.y,
+        z: target.z,
+        rotationY: target.rotationY,
+        width: logoWidth,
+        height: logoHeight,
+        frameIndex: 9999 + index,
+      };
+
+      this.clickableMeshes.push(photoMesh);
+      this.meshToArtworkMap.set(photoMesh.uuid, artworkPos);
+
+      // 4. Subtle Museum Glass Layer
+      const glassGeo = new THREE.PlaneGeometry(logoWidth, logoHeight);
+      const glassMesh = new THREE.Mesh(
+        glassGeo,
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.02,
+        })
+      );
+      glassMesh.position.z = 0.016;
+      group.add(glassMesh);
+
+      // 5. Museum Wall Plaque for Logo
+      const plaqueWidth = 0.95;
+      const plaqueHeight = 0.36;
+      const plaqueCanvas = document.createElement('canvas');
+      plaqueCanvas.width = 1024;
+      plaqueCanvas.height = 420;
+      const pctx = plaqueCanvas.getContext('2d')!;
+
+      pctx.fillStyle = '#ffffff';
+      pctx.fillRect(0, 0, 1024, 420);
+
+      pctx.strokeStyle = '#c8a265';
+      pctx.lineWidth = 8;
+      pctx.strokeRect(10, 10, 1004, 400);
+
+      pctx.strokeStyle = '#222222';
+      pctx.lineWidth = 2.5;
+      pctx.strokeRect(22, 22, 980, 376);
+
+      pctx.fillStyle = '#111113';
+      pctx.font = 'bold 32px "Lato", -apple-system, sans-serif';
+      pctx.fillText('STUDIO EMBLEM & SIGNATURE', 48, 80);
+
+      pctx.font = 'bold 44px "Lato", -apple-system, sans-serif';
+      pctx.fillStyle = '#0a0a0c';
+      pctx.fillText('TO THE INFINITY STUDIO', 48, 155);
+
+      pctx.font = 'bold 34px "Lato", -apple-system, sans-serif';
+      pctx.fillStyle = '#9e7328';
+      pctx.fillText('SARVESH CHAUDHARI • MUMBAI, INDIA', 48, 230);
+
+      pctx.fillStyle = '#0f0f12';
+      pctx.fillRect(48, 290, 928, 64);
+      pctx.fillStyle = '#ffffff';
+      pctx.font = 'bold 28px "Lato", -apple-system, sans-serif';
+      pctx.fillText('▶ CLICK TO VIEW STUDIO NARRATIVE', 80, 333);
+
+      const plaqueTex = new THREE.CanvasTexture(plaqueCanvas);
+      plaqueTex.colorSpace = THREE.SRGBColorSpace;
+      const plaqueGeo = new THREE.PlaneGeometry(plaqueWidth, plaqueHeight);
+      const plaqueMesh = new THREE.Mesh(
+        plaqueGeo,
+        new THREE.MeshBasicMaterial({ map: plaqueTex, side: THREE.FrontSide })
+      );
+      plaqueMesh.position.set(0, -logoHeight / 2 - 0.28, 0.04);
+      group.add(plaqueMesh);
+
+      this.clickableMeshes.push(plaqueMesh);
+      this.meshToArtworkMap.set(plaqueMesh.uuid, artworkPos);
+
+      // 6. Brass Picture Lamp Fixture above the Logo
+      const lampArm = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.014, 0.014, 0.24, 12),
+        lampMat
+      );
+      lampArm.rotation.x = Math.PI / 2;
+      lampArm.position.set(0, logoHeight / 2 + 0.2, 0.08);
+      group.add(lampArm);
+
+      const hood = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, logoWidth * 0.6, 16),
+        lampMat
+      );
+      hood.rotation.z = Math.PI / 2;
+      hood.position.set(0, logoHeight / 2 + 0.2, 0.18);
+      group.add(hood);
+
       this.scene.add(group);
     });
   }
