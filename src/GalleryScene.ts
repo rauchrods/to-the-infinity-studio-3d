@@ -42,14 +42,16 @@ export class GalleryScene {
     // Face forward down the corridor toward +Z (Math.PI radians yaw)
     this.camera.rotation.set(0, Math.PI, 0);
 
-    // 3. WebGL Renderer
+    // 3. WebGL Renderer - Mobile (iOS WebKit / Android) Optimized
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: !isMobile, // Disable MSAA on mobile to prevent iOS Safari memory crash
       powerPreference: 'high-performance',
-      precision: 'highp',
+      precision: isMobile ? 'mediump' : 'highp',
     });
     this.renderer.setSize(container.clientWidth, container.clientHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    // iOS Safari caps canvas buffer memory tightly; clamp pixel ratio to 1.25 on mobile, 1.6 on desktop
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.6));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = false;
@@ -327,62 +329,63 @@ export class GalleryScene {
       glassMesh.position.z = 0.016;
       group.add(glassMesh);
 
-      // 5. High-Legibility Museum Wall Plaque
+      // 5. Museum Wall Plaque - Single shared material with per-mesh canvas texture or standard dimension
       const plaqueWidth = 0.82;
       const plaqueHeight = 0.38;
       const plaqueCanvas = document.createElement('canvas');
-      plaqueCanvas.width = 1024;
-      plaqueCanvas.height = 475;
+      plaqueCanvas.width = 512;
+      plaqueCanvas.height = 240;
       const pctx = plaqueCanvas.getContext('2d')!;
 
       // Crisp pure white plaque card
       pctx.fillStyle = '#ffffff';
-      pctx.fillRect(0, 0, 1024, 475);
+      pctx.fillRect(0, 0, 512, 240);
 
       // Elegant double border with museum brass accent
       pctx.strokeStyle = '#c8a265';
-      pctx.lineWidth = 8;
-      pctx.strokeRect(10, 10, 1004, 455);
+      pctx.lineWidth = 4;
+      pctx.strokeRect(5, 5, 502, 230);
 
       pctx.strokeStyle = '#222222';
-      pctx.lineWidth = 2.5;
-      pctx.strokeRect(22, 22, 980, 431);
+      pctx.lineWidth = 1.5;
+      pctx.strokeRect(12, 12, 488, 216);
 
       // Category Pill / Tag
       pctx.fillStyle = '#111113';
-      pctx.font = 'bold 32px "Lato", -apple-system, sans-serif';
-      pctx.fillText((artwork.item.categoryLabel || 'EDITORIAL').toUpperCase(), 48, 85);
+      pctx.font = 'bold 16px "Lato", -apple-system, sans-serif';
+      pctx.fillText((artwork.item.categoryLabel || 'EDITORIAL').toUpperCase(), 24, 44);
 
       // Artwork Title
-      pctx.font = 'bold 46px "Lato", -apple-system, sans-serif';
+      pctx.font = 'bold 23px "Lato", -apple-system, sans-serif';
       pctx.fillStyle = '#0a0a0c';
       const truncatedTitle =
         artwork.item.title.length > 25
           ? artwork.item.title.substring(0, 23) + '...'
           : artwork.item.title;
-      pctx.fillText(truncatedTitle, 48, 165);
+      pctx.fillText(truncatedTitle, 24, 84);
 
       // Client / Brand line
-      pctx.font = 'bold 36px "Lato", -apple-system, sans-serif';
+      pctx.font = 'bold 18px "Lato", -apple-system, sans-serif';
       pctx.fillStyle = '#9e7328';
       const clientName = artwork.item.client || 'STUDIO COMMISSION';
-      pctx.fillText(clientName.toUpperCase(), 48, 245);
+      pctx.fillText(clientName.toUpperCase(), 24, 124);
 
       // Studio Credit
-      pctx.font = '600 28px "Lato", -apple-system, sans-serif';
+      pctx.font = '600 14px "Lato", -apple-system, sans-serif';
       pctx.fillStyle = '#444446';
-      pctx.fillText('TO THE ∞ STUDIO • SARVESH CHAUDHARI', 48, 320);
+      pctx.fillText('TO THE ∞ STUDIO • SARVESH CHAUDHARI', 24, 162);
 
       // Action CTA Bar
       pctx.fillStyle = '#0f0f12';
-      pctx.fillRect(48, 365, 928, 64);
+      pctx.fillRect(24, 185, 464, 34);
       pctx.fillStyle = '#ffffff';
-      pctx.font = 'bold 28px "Lato", -apple-system, sans-serif';
-      pctx.fillText('▶ CLICK TO INSPECT & VIEW HIGH-RES', 72, 408);
+      pctx.font = 'bold 14px "Lato", -apple-system, sans-serif';
+      pctx.fillText('▶ CLICK TO INSPECT & VIEW HIGH-RES', 36, 208);
 
       const plaqueTex = new THREE.CanvasTexture(plaqueCanvas);
       plaqueTex.colorSpace = THREE.SRGBColorSpace;
-      plaqueTex.needsUpdate = true;
+      plaqueTex.minFilter = THREE.LinearFilter;
+      plaqueTex.generateMipmaps = false;
 
       const plaqueGeo = new THREE.PlaneGeometry(plaqueWidth, plaqueHeight);
       const plaqueMesh = new THREE.Mesh(

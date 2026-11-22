@@ -36,6 +36,11 @@ export class PlayerFPSControls {
   private walkTime: number = 0;
   private baseHeight: number = GALLERY_CONFIG.playerEyeHeight;
 
+  // Touch tracking for mobile (iPhone / Android)
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
+  private isTouching: boolean = false;
+
   private onLockChangeCallback?: (locked: boolean) => void;
 
   constructor(options: PlayerControlsOptions) {
@@ -60,6 +65,11 @@ export class PlayerFPSControls {
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
     this.domElement.addEventListener('mousemove', this.onMouseMove);
+
+    // Mobile Touch Navigation
+    this.domElement.addEventListener('touchstart', this.onTouchStart, { passive: false });
+    this.domElement.addEventListener('touchmove', this.onTouchMove, { passive: false });
+    this.domElement.addEventListener('touchend', this.onTouchEnd, { passive: false });
   }
 
   public unbindEvents() {
@@ -67,13 +77,23 @@ export class PlayerFPSControls {
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
     this.domElement.removeEventListener('mousemove', this.onMouseMove);
+
+    this.domElement.removeEventListener('touchstart', this.onTouchStart);
+    this.domElement.removeEventListener('touchmove', this.onTouchMove);
+    this.domElement.removeEventListener('touchend', this.onTouchEnd);
   }
 
   public lock() {
-    if (!this.isLocked) {
-      this.domElement.requestPointerLock?.();
+      // Only request pointer lock on desktop browsers
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (!this.isLocked && !isMobile) {
+        try {
+          this.domElement.requestPointerLock?.();
+        } catch {
+          // Ignore on unsupported browsers
+        }
+      }
     }
-  }
 
   public unlock() {
     if (this.isLocked) {
@@ -93,18 +113,60 @@ export class PlayerFPSControls {
 
     const movementX = event.movementX || 0;
     const movementY = event.movementY || 0;
-
     const sensitivity = 0.0022;
 
     this.euler.setFromQuaternion(this.camera.quaternion);
     this.euler.y -= movementX * sensitivity;
     this.euler.x -= movementY * sensitivity;
 
-    // Clamp pitch look angle (-85 deg to +85 deg)
     const maxPolar = Math.PI / 2 - 0.08;
     this.euler.x = Math.max(-maxPolar, Math.min(maxPolar, this.euler.x));
 
     this.camera.quaternion.setFromEuler(this.euler);
+  };
+
+  // Mobile Touch Controls
+  private onTouchStart = (event: TouchEvent) => {
+    if (!this.isEnabled) return;
+    if (event.touches.length === 1) {
+      this.isTouching = true;
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
+    }
+  };
+
+  private onTouchMove = (event: TouchEvent) => {
+    if (!this.isTouching || !this.isEnabled || event.touches.length !== 1) return;
+    event.preventDefault();
+
+    const currentX = event.touches[0].clientX;
+    const currentY = event.touches[0].clientY;
+    const deltaX = currentX - this.touchStartX;
+    const deltaY = currentY - this.touchStartY;
+
+    this.touchStartX = currentX;
+    this.touchStartY = currentY;
+
+    // Swipe left/right looks around, swipe up/down walks or looks
+    const touchSensitivity = 0.0035;
+    this.euler.setFromQuaternion(this.camera.quaternion);
+    this.euler.y -= deltaX * touchSensitivity;
+
+    // Small tilt
+    this.euler.x -= deltaY * touchSensitivity * 0.4;
+    const maxPolar = Math.PI / 2 - 0.15;
+    this.euler.x = Math.max(-maxPolar, Math.min(maxPolar, this.euler.x));
+
+    this.camera.quaternion.setFromEuler(this.euler);
+
+    // Drag forward/back moves along the aisle
+    if (Math.abs(deltaY) > 5) {
+      this.velocity.z += deltaY * 0.08;
+    }
+  };
+
+  private onTouchEnd = () => {
+    this.isTouching = false;
   };
 
   private onKeyDown = (event: KeyboardEvent) => {
@@ -149,18 +211,9 @@ export class PlayerFPSControls {
     }
   };
 
-  // Support for on-screen touch virtual joystick
-  public setVirtualMovement(forward: number, right: number) {
-    this.moveForward = forward > 0.2;
-    this.moveBackward = forward < -0.2;
-    this.moveRight = right > 0.2;
-    this.moveLeft = right < -0.2;
-  }
-
   public update(delta: number) {
     if (!this.isEnabled) return;
 
-    // Dampen velocity for smooth fluid inertia
     const friction = 10.0;
     this.velocity.x -= this.velocity.x * friction * delta;
     this.velocity.z -= this.velocity.z * friction * delta;
@@ -178,7 +231,6 @@ export class PlayerFPSControls {
       this.velocity.x -= this.direction.x * speed * delta * 10;
     }
 
-    // Move relative to camera yaw
     const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(
       new THREE.Vector3(0, 1, 0),
       this.euler.y
@@ -195,7 +247,6 @@ export class PlayerFPSControls {
     this.camera.position.x = Math.max(this.minX, Math.min(this.maxX, this.camera.position.x));
     this.camera.position.z = Math.max(this.minZ, Math.min(this.maxZ, this.camera.position.z));
 
-    // Subtle natural head bob while walking
     const isMoving =
       Math.abs(this.velocity.x) > 0.3 || Math.abs(this.velocity.z) > 0.3;
 
@@ -211,7 +262,6 @@ export class PlayerFPSControls {
     }
   }
 
-  // Teleport player safely to an artwork viewing position
   public setPositionAndLookAt(pos: THREE.Vector3, target: THREE.Vector3) {
     this.camera.position.copy(pos);
     this.camera.lookAt(target);
