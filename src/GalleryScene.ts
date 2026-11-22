@@ -61,8 +61,8 @@ export class GalleryScene {
     // 5. European Salon Decor (Classical Statues, Pilasters, Chesterfield Benches)
     new EuropeanGalleryDecor(this.scene, hallLength, hallWidth, hallHeight);
 
-    // 6. Lighting Setup (Clean, bright, uniform gallery lighting)
-    this.setupLighting(hallLength, hallHeight);
+    // 6. Lighting Setup (Bright, clean, natural gallery diffuse lighting + side wall track wash)
+    this.setupLighting(hallLength, hallHeight, hallWidth);
 
     // 7. Build Artwork Frames with Gilded Gold frames & visible photos
     this.buildArtworks(layout);
@@ -159,22 +159,37 @@ export class GalleryScene {
     this.scene.add(endWall);
   }
 
-  private setupLighting(length: number, height: number) {
-    // 1. Natural Bright Daylight Fill Light
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xf6f6f2, 1.35);
+  private setupLighting(length: number, height: number, width: number) {
+    // 1. Natural Bright Daylight Fill Light (Balanced ambient)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe8e6df, 0.95);
     hemiLight.position.set(0, height, 0);
     this.scene.add(hemiLight);
 
-    // 2. High-key directional ambient light along the gallery
-    const dirCount = Math.max(4, Math.floor(length / 28));
-    for (let i = 0; i < dirCount; i++) {
-      const zPos = (i + 0.5) * (length / dirCount);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.45);
-      dirLight.position.set(0, height, zPos);
-      this.scene.add(dirLight);
-    }
+    // 2. High-performance Wall & Hall Spotlights
+    // Exactly 4 global directional lights angled outward across the whole length (No WebGL stall, locked 60 FPS)
+    const dirLightCenter = new THREE.DirectionalLight(0xfffbf2, 0.55);
+    dirLightCenter.position.set(0, height, length * 0.3);
+    this.scene.add(dirLightCenter);
 
-    // 3. Ceiling light fixture accents
+    const dirLightFar = new THREE.DirectionalLight(0xfffbf2, 0.55);
+    dirLightFar.position.set(0, height, length * 0.7);
+    this.scene.add(dirLightFar);
+
+    // Wall-Wash Light along Left Display Wall (Highlights all left frames)
+    const leftWallWash = new THREE.DirectionalLight(0xffeedb, 0.75);
+    leftWallWash.position.set(-width / 2 + 3.0, height, length / 2);
+    leftWallWash.target.position.set(-width / 2, 1.9, length / 2);
+    this.scene.add(leftWallWash);
+    this.scene.add(leftWallWash.target);
+
+    // Wall-Wash Light along Right Display Wall (Highlights all right frames)
+    const rightWallWash = new THREE.DirectionalLight(0xffeedb, 0.75);
+    rightWallWash.position.set(width / 2 - 3.0, height, length / 2);
+    rightWallWash.target.position.set(width / 2, 1.9, length / 2);
+    this.scene.add(rightWallWash);
+    this.scene.add(rightWallWash.target);
+
+    // 3. Ceiling light fixture accents along track
     const numFixtures = Math.floor(length / 7.0);
     for (let i = 0; i <= numFixtures; i++) {
       const zPos = i * 7.0;
