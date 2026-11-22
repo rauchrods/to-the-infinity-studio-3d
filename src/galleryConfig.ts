@@ -99,46 +99,52 @@ export function calculateGalleryLayout(artworks: GalleryItem[]): {
 }
 
 /**
- * Procedural Calacatta Gold / Carrara Luxury Italian Marble Texture
- * Generates high-res seamless marble slabs with rich, visible gold & charcoal veining and specular sheen
+ * Procedural French Warm Grey Marble / Limestone Texture (Gris du Marais / French Greige)
+ * Refined warm dove-grey & soft taupe stone base with organic creamy ivory and chalk-white feather veins
  */
-export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness: THREE.CanvasTexture } {
+export function createMarbleTexture(width = 9.6, length = 300): { diffuse: THREE.CanvasTexture; roughness: THREE.CanvasTexture } {
   const size = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  // 1. Warm ivory & soft beige Italian marble base tone (high contrast for veins)
-  ctx.fillStyle = '#f0ece3';
+  // 1. Refined French Warm Grey / Taupe Limestone Stone Base
+  const baseGrad = ctx.createLinearGradient(0, 0, size, size);
+  baseGrad.addColorStop(0, '#989289');    // French limestone warm dove-grey
+  baseGrad.addColorStop(0.28, '#aca59c'); // Luminous warm greige tone
+  baseGrad.addColorStop(0.60, '#8f8980'); // Deep taupe-slate undertone
+  baseGrad.addColorStop(0.85, '#a59f96'); // Soft limestone highlight
+  baseGrad.addColorStop(1, '#878178');    // Rich earth boundary
+  ctx.fillStyle = baseGrad;
   ctx.fillRect(0, 0, size, size);
 
-  // Soft atmospheric mineral cloud variations
-  for (let i = 0; i < 8; i++) {
+  // 2. Soft atmospheric mineral clouds (natural French limestone breccia)
+  for (let i = 0; i < 11; i++) {
     const rx = Math.random() * size;
     const ry = Math.random() * size;
-    const rad = 200 + Math.random() * 250;
+    const rad = 180 + Math.random() * 260;
     const radGrad = ctx.createRadialGradient(rx, ry, 20, rx, ry, rad);
-    radGrad.addColorStop(0, 'rgba(230, 224, 214, 0.7)');
-    radGrad.addColorStop(0.5, 'rgba(245, 243, 238, 0.3)');
-    radGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    radGrad.addColorStop(0, 'rgba(140, 132, 122, 0.48)');
+    radGrad.addColorStop(0.45, 'rgba(165, 156, 145, 0.30)');
+    radGrad.addColorStop(1, 'rgba(152, 144, 134, 0)');
     ctx.fillStyle = radGrad;
     ctx.fillRect(0, 0, size, size);
   }
 
-  // 2. High-Definition Organic Marble Vein Drawer
+  // High-Definition Organic Marble Vein Drawer
   const drawVein = (
     startX: number,
     startY: number,
     endX: number,
     endY: number,
     color: string,
-    width: number,
+    lineWidth: number,
     branches: number
   ) => {
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+    ctx.lineWidth = lineWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -147,7 +153,7 @@ export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness
 
     let curX = startX;
     let curY = startY;
-    const steps = 35;
+    const steps = 38;
     const dx = (endX - startX) / steps;
     const dy = (endY - startY) / steps;
 
@@ -156,19 +162,19 @@ export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness
       curY += dy + (Math.random() - 0.5) * 20;
       ctx.lineTo(curX, curY);
 
-      if (branches > 0 && Math.random() < 0.3) {
+      if (branches > 0 && Math.random() < 0.35) {
         ctx.stroke();
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = width * 0.5;
+        ctx.lineWidth = lineWidth * 0.52;
         ctx.moveTo(curX, curY);
-        const bx = curX + (Math.random() - 0.5) * 140;
-        const by = curY + (Math.random() - 0.5) * 140;
+        const bx = curX + (Math.random() - 0.5) * 160;
+        const by = curY + (Math.random() - 0.5) * 160;
         ctx.lineTo(bx, by);
         ctx.stroke();
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = width;
+        ctx.lineWidth = lineWidth;
         ctx.moveTo(curX, curY);
       }
     }
@@ -176,31 +182,38 @@ export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness
     ctx.restore();
   };
 
-  // 3. Pronounced Charcoal & Slate Grey Dramatic Veins
+  // 3. Signature Creamy Ivory & Chalk-White Flowing Veins
+  for (let i = 0; i < 9; i++) {
+    const sx = Math.random() * size;
+    const ex = (sx + (Math.random() - 0.5) * 600 + size) % size;
+    drawVein(sx, 0, ex, size, 'rgba(250, 247, 240, 0.94)', 5.0, 3);
+  }
+
+  // 4. Secondary Pale Calcite & Silk Feather Threads
+  for (let i = 0; i < 7; i++) {
+    const sy = Math.random() * size;
+    const ey = (sy + (Math.random() - 0.5) * 500 + size) % size;
+    drawVein(0, sy, size, ey, 'rgba(235, 230, 222, 0.82)', 3.4, 2);
+  }
+
+  // 5. Supporting Warm Charcoal-Taupe Mineral Veins
   for (let i = 0; i < 6; i++) {
     const sy = Math.random() * size;
     const ey = (sy + (Math.random() - 0.5) * 500 + size) % size;
-    drawVein(0, sy, size, ey, 'rgba(110, 105, 98, 0.75)', 4.2, 3);
+    drawVein(0, sy, size, ey, 'rgba(115, 106, 96, 0.75)', 2.5, 2);
   }
 
-  // 4. Distinct Golden Amber & Ocre Calacatta Veins
-  for (let i = 0; i < 5; i++) {
-    const sx = Math.random() * size;
-    const ex = (sx + (Math.random() - 0.5) * 600 + size) % size;
-    drawVein(sx, 0, ex, size, 'rgba(185, 142, 85, 0.65)', 3.2, 2);
-  }
-
-  // 5. Hairline Micro-fracture mineral threads
-  for (let i = 0; i < 10; i++) {
+  // 6. Hairline Micro-fracture mineral needles
+  for (let i = 0; i < 15; i++) {
     const sx = Math.random() * size;
     const sy = Math.random() * size;
-    drawVein(sx, sy, sx + 280, sy + 220, 'rgba(140, 130, 120, 0.45)', 1.5, 1);
+    drawVein(sx, sy, sx + 250, sy + 190, 'rgba(175, 165, 155, 0.58)', 1.5, 1);
   }
 
-  // 6. European Large Marble Slab Grout Seams (Crisp, dark contrast)
-  const tileSize = 256;
-  ctx.strokeStyle = 'rgba(170, 162, 150, 0.85)';
-  ctx.lineWidth = 3.5;
+  // 7. Grand European Monumental Marble Slab Grout Seams (Large format ~1.6m x 1.6m square slabs)
+  const tileSize = 512; // 2x2 grand slabs per 1024px texture canvas
+  ctx.strokeStyle = 'rgba(105, 98, 92, 0.94)';
+  ctx.lineWidth = 4.0;
   for (let x = 0; x <= size; x += tileSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -214,31 +227,36 @@ export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness
     ctx.stroke();
   }
 
+  // Each 512px slab is 1.6m x 1.6m (whole 1024px texture is 3.2m x 3.2m)
+  // Across 9.6m hall width: exactly 6 grand luxury marble squares (large format)
+  const repeatX = Math.max(1, Math.round(width / 3.2));
+  const repeatY = Math.max(5, Math.round(length / 3.2));
+
   const diffuse = new THREE.CanvasTexture(canvas);
   diffuse.wrapS = THREE.RepeatWrapping;
   diffuse.wrapT = THREE.RepeatWrapping;
-  // Repeat 4x across corridor width, 40x along corridor length for crisp natural marble scale
-  diffuse.repeat.set(4, 40);
+  diffuse.repeat.set(repeatX, repeatY);
   diffuse.colorSpace = THREE.SRGBColorSpace;
+  diffuse.anisotropy = 8;
 
-  // Polished specular reflection roughness map
+  // Polished specular reflection roughness map (High gloss French limestone polish)
   const roughCanvas = document.createElement('canvas');
   roughCanvas.width = 256;
   roughCanvas.height = 256;
   const rctx = roughCanvas.getContext('2d')!;
-  rctx.fillStyle = '#303030'; // High-gloss polished museum marble (roughness ~0.19)
+  rctx.fillStyle = '#222222'; // Satiny polished stone sheen (~0.14 specular roughness)
   rctx.fillRect(0, 0, 256, 256);
 
-  // Grout lines roughness
-  rctx.strokeStyle = '#757575';
+  // Grout lines roughness (matte grout in joints for 2x2 grand slabs)
+  rctx.strokeStyle = '#606060';
   rctx.lineWidth = 4;
-  for (let x = 0; x <= 256; x += 64) {
+  for (let x = 0; x <= 256; x += 128) {
     rctx.beginPath();
     rctx.moveTo(x, 0);
     rctx.lineTo(x, 256);
     rctx.stroke();
   }
-  for (let y = 0; y <= 256; y += 64) {
+  for (let y = 0; y <= 256; y += 128) {
     rctx.beginPath();
     rctx.moveTo(0, y);
     rctx.lineTo(256, y);
@@ -248,7 +266,8 @@ export function createMarbleTexture(): { diffuse: THREE.CanvasTexture; roughness
   const roughness = new THREE.CanvasTexture(roughCanvas);
   roughness.wrapS = THREE.RepeatWrapping;
   roughness.wrapT = THREE.RepeatWrapping;
-  roughness.repeat.set(4, 40);
+  roughness.repeat.set(repeatX, repeatY);
+  roughness.anisotropy = 8;
 
   return { diffuse, roughness };
 }

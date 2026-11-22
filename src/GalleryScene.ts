@@ -74,25 +74,29 @@ export class GalleryScene {
   }
 
   private buildArchitecture(length: number, width: number, height: number) {
-    // 1. Calacatta Gold / Carrara Luxury Polished Marble Floor
-    const { diffuse: marbleDiffuse, roughness: marbleRough } = createMarbleTexture();
+    // 1. French Warm Grey / Greige Luxury Polished Limestone Floor (Grand European Slabs)
+    const { diffuse: marbleDiffuse, roughness: marbleRough } = createMarbleTexture(width, length);
+    const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
+    marbleDiffuse.anisotropy = Math.min(maxAnisotropy, 16);
+    marbleRough.anisotropy = Math.min(maxAnisotropy, 16);
+
     const floorGeo = new THREE.PlaneGeometry(width, length);
     const floorMat = new THREE.MeshStandardMaterial({
       map: marbleDiffuse,
       roughnessMap: marbleRough,
-      roughness: 0.18,
-      metalness: 0.05,
+      roughness: 0.20,
+      metalness: 0.04,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(0, 0, length / 2 - 2);
     this.scene.add(floor);
 
-    // Baseboard trims along floor edges
+    // Baseboard trims along floor edges (Architectural warm graphite-bronze profile)
     const trimMat = new THREE.MeshStandardMaterial({
-      color: 0x242426,
-      roughness: 0.3,
-      metalness: 0.8,
+      color: 0x22201e,
+      roughness: 0.28,
+      metalness: 0.82,
     });
     const trimLeftGeo = new THREE.BoxGeometry(0.08, 0.1, length);
     const trimLeft = new THREE.Mesh(trimLeftGeo, trimMat);
@@ -476,10 +480,10 @@ export class GalleryScene {
       },
     ];
 
-    const logoWidth = 2.4;
-    const logoHeight = 2.4;
-    const frameThickness = 0.18;
-    const frameDepth = 0.08;
+    const logoWidth = 3.2;
+    const logoHeight = 3.2;
+    const frameThickness = 0.22;
+    const frameDepth = 0.10;
 
     wallTargets.forEach((target, index) => {
       const group = new THREE.Group();
