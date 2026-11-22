@@ -49,7 +49,8 @@ export class PlayerFPSControls {
     this.minZ = 0.5; // Do not walk backwards out of entrance
     this.maxZ = options.hallLength - 3.5;
 
-    this.euler.copy(this.camera.rotation);
+    // Initialize orientation to match the forward-facing camera
+    this.euler.setFromQuaternion(this.camera.quaternion);
 
     this.bindEvents();
   }

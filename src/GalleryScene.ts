@@ -30,7 +30,7 @@ export class GalleryScene {
     // Fog starts gently and extends past the entire hall
     this.scene.fog = new THREE.Fog(0xfbfbfa, 50, Math.max(hallLength + 50, 250));
 
-    // 2. Camera - Far plane set generously to view the full grand gallery hall
+    // 2. Camera - Positioned at entrance looking directly forward (+Z) down the grand gallery
     this.camera = new THREE.PerspectiveCamera(
       62,
       container.clientWidth / container.clientHeight,
@@ -38,7 +38,9 @@ export class GalleryScene {
       Math.max(hallLength + 80, 500)
     );
     this.camera.rotation.order = 'YXZ';
-    this.camera.position.set(0, 1.7, 0);
+    this.camera.position.set(0, 1.7, 0.5);
+    // Face forward down the corridor toward +Z (Math.PI radians yaw)
+    this.camera.rotation.set(0, Math.PI, 0);
 
     // 3. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
